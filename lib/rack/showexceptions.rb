@@ -40,6 +40,12 @@ module Rack
           frame.filename = $1
           frame.lineno = $2.to_i
           frame.function = $4
+                
+          if ENV["TEXTMATE"]
+            u = ERB::Util.method(:u)
+            full_filename = ::File.expand_path(frame.filename)
+            frame.system_url = "txmt://open?url=file://#{u.call(full_filename)}&line=#{frame.lineno}"
+          end
 
           begin
             lineno = frame.lineno-1
@@ -215,7 +221,13 @@ TEMPLATE = <<'HTML'
   <ul class="traceback">
 <% frames.each { |frame| %>
       <li class="frame">
-        <code><%=h frame.filename %></code>: in <code><%=h frame.function %></code>
+        <code>
+          <% if frame.system_url %>
+            <a href="<%=h frame.system_url %>"><%=h frame.filename %>:<%=h frame.lineno %></a>
+          <% else %>
+            <%=h frame.filename %>:<%=h frame.lineno %>
+          <% end %>
+        </code> in <code><%=h frame.function %></code>
 
           <% if frame.context_line %>
           <div class="context" id="c<%=h frame.object_id %>">
